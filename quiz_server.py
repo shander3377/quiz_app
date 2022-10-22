@@ -8,6 +8,7 @@ port= 8000
 server.bind((ip_Address, port))
 server.listen()
 clients = []
+nicknames = []
 questions = [
      " What is the Italian word for PIE? \n a.Mozarella\n b.Pasty\n c.Patty\n d.Pizza",
      " Water boils at 212 Units at which scale? \n a.Fahrenheit\n b.Celsius\n c.Rankine\n d.Kelvin",
@@ -40,12 +41,14 @@ def getRandomQuestionAnswer(conn):
 def removeQuestion(i):
     questions.pop(i)
     answers.pop(i)
-def remove(connection):
+def remove(connection, nickname):
     if connection in clients:
         clients.remove(connection) 
-def clientThread(conn):
+    if nickname in nicknames:
+        nicknames.remove(nickname)
+def clientThread(conn, nickname):
     score = 0
-    conn.send("Welcome to this quiz game!".encode("utf-8"))
+    conn.send("Welcome to this quiz game!\n".encode("utf-8"))
     conn.send("You will recieve a question, the answer to that question must be one of a, b, c or d\n".encode("utf-8"))
     conn.send("Good Luck! \n\n".encode("utf-8"))
     index, ques, ans =getRandomQuestionAnswer(conn)
@@ -58,15 +61,19 @@ def clientThread(conn):
                   score += 1
                   conn.send(f"Yayayay you got the answer correct! Your score is {score}\n\n".encode("utf-8"))  
                 else:
-                    conn.send("You got it wrong. Better luck next time!".encode("utf-8"))
+                    conn.send("You got it wrong. Better luck next time!\n".encode("utf-8"))
                 removeQuestion(index)
                 index, ques, ans = getRandomQuestionAnswer(conn)
             else:
-                remove(conn)
+                remove(conn, nickname)
         except:
             continue
 while(True):
     connection, address = server.accept()
+    connection.send("NICKNAME".encode("utf-8"))
+    nickname = connection.recv(2048).decode("utf-8")
+    nicknames.append(nickname)
+    print(nickname + " connected!")
     clients.append(connection)
-    newThread = Thread(target=clientThread, args=(connection))
+    newThread = Thread(target=clientThread, args=(connection,nickname))
     newThread.start()
